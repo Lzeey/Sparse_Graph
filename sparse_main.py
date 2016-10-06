@@ -16,7 +16,7 @@ def randomword(length):
 if __name__ == "__main__":
     
     max_url_sample = 1000
-    num_entries  = 10000
+    num_entries  = 100000
     num_users = 100
     urllist = pd.read_csv('top-1m.csv', header=None, names=['rank','site'], usecols=['site'])
     urllist = urllist.head(max_url_sample) #Take only top 10K
@@ -47,10 +47,10 @@ if __name__ == "__main__":
     domain_user_count['domain_idx'] = domain_user_count.index.map(lambda x: domain_dict[x])
     
     #Insert indices into df_unique
-    df_unique['user_idx'] = df['user'].map(lambda x: users_dict[x])
+    df_unique['user_idx'] = df_unique['user'].apply(lambda x: users_dict[x])
     df_unique = df_unique.merge(domain_user_count, left_on='domain', right_index=True)
     
-    sparse_X = sp.sparse.coo_matrix((df_unique['value'].values,(df_unique['user_idx'].values,df_unique['domain_idx'].values)),
+    sparse_X = sp.sparse.coo_matrix((df_unique['value'],(df_unique['user_idx'],df_unique['domain_idx'])),
                                      shape=(len(users),len(domains))) #COO matrix is good for instantiation
     sparse_X1 = sparse_X.tocsr()
     
@@ -74,11 +74,14 @@ if __name__ == "__main__":
     cocurrence_df['domain'] = cocurrence_df['domain_idx'].map(lambda x: domains[x])    
     cocurrence_df['co_domain'] = cocurrence_df['co_domain_idx'].map(lambda x: domains[x])   
     
-    cocurrence_domains = cocurrence_df.groupby('domain').agg({'co_domain':['nunique','unique'], 'cocurrence_score':'max'})
-    
-    #Complete the matrix here
+    cocurrence_domains = cocurrence_df.groupby('domain')['co_domain'].agg({'cocurrence_ND':'nunique', 'cocurrent_details':'unique'})
+    cocurrence_domains = cocurrence_domains[cocurrence_domains['cocurrence_ND'] > 1]
     
     #Inner join with something else
+    user_cocurrence_df = df_unique.join(cocurrence_domains, how='inner', on='domain')
     
+    cocurrence_feature = user_cocurrence_df.groupby('user')['cocurrence_ND'].agg({'max_cocurrence':'max'})
+    #Join and something
+    user_cocurrence_df.
     
     
